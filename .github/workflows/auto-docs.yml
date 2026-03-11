@@ -40,10 +40,10 @@ jobs:
 
       - name: Download central generate_docs.py
         run: |
-          curl -H "Authorization: token ${{ secrets.DOCS_REPO_TOKEN }}" \
-            -H "Accept: application/vnd.github.v3.raw" \
-            -o generate_docs.py \
+          curl -f -o generate_docs.py \
             "https://raw.githubusercontent.com/ApplikonITSolutions/.github/main/.github/scripts/generate_docs.py"
+          echo "=== Downloaded file preview ==="
+          head -5 generate_docs.py
 
       - name: Get recent changes
         run: |

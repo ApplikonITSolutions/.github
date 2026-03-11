@@ -43,7 +43,7 @@ jobs:
           curl -H "Authorization: token ${{ secrets.DOCS_REPO_TOKEN }}" \
             -H "Accept: application/vnd.github.v3.raw" \
             -o generate_docs.py \
-            "https://raw.githubusercontent.com/ApplikonITSolutions/.github/main/scripts/generate_docs.py"
+            "https://raw.githubusercontent.com/ApplikonITSolutions/.github/main/.github/scripts/generate_docs.py"
 
       - name: Get recent changes
         run: |

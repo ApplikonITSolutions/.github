@@ -69,7 +69,7 @@ jobs:
           REPO_NAME="${GITHUB_REPOSITORY#*/}"
 
           # Clone central docs repo
-          git clone https://x-access-token:${{ secrets.DOCS_REPO_TOKEN }}@github.com/ApplikonITSolutions/docs.git central-docs
+          git clone https://rohitsfdc:${{ secrets.DOCS_REPO_TOKEN }}@github.com/ApplikonITSolutions/docs.git central-docs
 
           # Create project folder if needed
           mkdir -p central-docs/$REPO_NAME/changes

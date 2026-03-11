@@ -1,0 +1,92 @@
+name: Auto Documentation (Reusable)
+
+"on":
+  workflow_call:
+    inputs:
+      description:
+        description: 'Brief description of changes in this release'
+        required: true
+        type: string
+    secrets:
+      ANTHROPIC_API_KEY:
+        required: true
+      DOCS_REPO_TOKEN:
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  generate-docs:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: central-docs-update
+      cancel-in-progress: false
+
+    steps:
+      - name: Checkout calling repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 10
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install anthropic
+
+      - name: Download central generate_docs.py
+        run: |
+          curl -H "Authorization: token ${{ secrets.DOCS_REPO_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3.raw" \
+            -o generate_docs.py \
+            "https://raw.githubusercontent.com/ApplikonITSolutions/.github/main/scripts/generate_docs.py"
+
+      - name: Get recent changes
+        run: |
+          git log --oneline -10 > recent_commits.txt
+          git diff HEAD~5 HEAD --name-only > changed_files.txt
+          git diff HEAD~5 HEAD > code_diff.txt
+          echo "=== Recent Commits ==="
+          cat recent_commits.txt
+          echo "=== Changed Files ==="
+          cat changed_files.txt
+
+      - name: Generate documentation with Claude
+        run: python3 generate_docs.py
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_REF: ${{ github.ref_name }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          RELEASE_DESCRIPTION: ${{ inputs.description }}
+
+      - name: Push docs to central docs repo
+        run: |
+          REPO_NAME="${GITHUB_REPOSITORY#*/}"
+
+          # Clone central docs repo
+          git clone https://x-access-token:${{ secrets.DOCS_REPO_TOKEN }}@github.com/ApplikonITSolutions/docs.git central-docs
+
+          # Create project folder if needed
+          mkdir -p central-docs/$REPO_NAME/changes
+
+          # Copy generated docs
+          cp docs/CHANGELOG.md central-docs/$REPO_NAME/CHANGELOG.md 2>/dev/null || true
+          cp -r docs/changes/. central-docs/$REPO_NAME/changes/ 2>/dev/null || true
+
+          # Update dashboard README
+          cd central-docs
+          python3 ../update_dashboard.py
+
+          # Commit and push
+          git config user.name "Claude Docs Bot"
+          git config user.email "claude-bot@applikonit.com"
+          git add .
+          git diff --staged --quiet && echo "No changes" || git commit -m "docs($REPO_NAME): auto-generated [skip ci]"
+          git push
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}

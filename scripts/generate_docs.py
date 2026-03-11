@@ -21,10 +21,15 @@ def generate_documentation():
     author      = os.environ.get("GITHUB_ACTOR", "Unknown")
     branch      = os.environ.get("GITHUB_REF", "main")
     repo        = os.environ.get("GITHUB_REPOSITORY", "unknown").split("/")[-1]
-    date        = datetime.date.today().isoformat()
     description = os.environ.get("RELEASE_DESCRIPTION", "Manual documentation run")
 
-    print(f"Repo={repo}, Author={author}, Date={date}")
+    # Date AND time
+    now         = datetime.datetime.utcnow()
+    date        = now.strftime("%Y-%m-%d")
+    timestamp   = now.strftime("%Y-%m-%d %H:%M UTC")
+    file_ts     = now.strftime("%Y-%m-%d_%H-%M")
+
+    print(f"Repo={repo}, Author={author}, Timestamp={timestamp}")
     print(f"Release description: {description}")
     print(f"Diff length: {len(diff)} characters")
 
@@ -53,7 +58,7 @@ CODE DIFF:
 Generate a detailed professional changelog entry in markdown:
 
 ## {description}
-**Project:** {repo} | **Date:** {date} | **Author:** {author} | **Branch:** {branch}
+**Project:** {repo} | **Date & Time:** {timestamp} | **Author:** {author} | **Branch:** {branch}
 
 ### Summary
 (2-3 sentences — plain English summary)
@@ -87,16 +92,18 @@ Generate a detailed professional changelog entry in markdown:
     print(f"Response received — {len(documentation)} characters")
 
     os.makedirs("docs/changes", exist_ok=True)
-    filename = f"docs/changes/{date}-{author}.md"
+
+    # Filename now includes time too
+    filename = f"docs/changes/{file_ts}-{author}.md"
 
     with open(filename, "a", encoding="utf-8") as f:
         f.write(documentation)
         f.write("\n\n---\n\n")
 
-    update_changelog(documentation, date, author)
+    update_changelog(documentation, timestamp, author)
     print(f"✅ Documentation saved to {filename}")
 
-def update_changelog(new_entry, date, author):
+def update_changelog(new_entry, timestamp, author):
     changelog_path = "docs/CHANGELOG.md"
     header = "# Applikon IT Solutions — Project Changelog\n\n"
 
@@ -107,14 +114,14 @@ def update_changelog(new_entry, date, author):
 
     with open(changelog_path, "w", encoding="utf-8") as f:
         f.write(header)
-        f.write(f"<!-- Last updated: {date} by {author} -->\n\n")
+        f.write(f"<!-- Last updated: {timestamp} by {author} -->\n\n")
         f.write(new_entry)
         f.write("\n\n---\n\n")
         old_content = existing.replace(header, "").strip()
         if old_content:
             f.write(old_content)
 
-    print(f"✅ CHANGELOG.md updated")
+    print(f"✅ CHANGELOG.md updated at {timestamp}")
 
 if __name__ == "__main__":
     generate_documentation()
